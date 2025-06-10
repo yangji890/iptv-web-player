@@ -1,54 +1,51 @@
-import React, { useState } from "react";
-import { parseM3U } from "./m3uParser.js";
-import Header from "./components/Header.jsx";
-import ChannelList from "./components/ChannelList.jsx";
-import Player from "./components/Player.jsx";
-import "./style.css";
+import React, { useState } from 'react'
+import { parseM3U } from './m3uParser'
+import ChannelList from './components/ChannelList'
+import Player from './components/Player'
+import Header from './components/Header'
 
 function App() {
-  const [channels, setChannels] = useState([]);
-  const [current, setCurrent] = useState(null);
-  const [m3uUrl, setM3uUrl] = useState("");
+  const [channels, setChannels] = useState([])
+  const [currentChannel, setCurrentChannel] = useState(null)
 
-  // 上传本地文件
-  const onInputFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const ch = parseM3U(ev.target.result);
-      setChannels(ch);
-      setCurrent(ch[0] || null);
-    };
-    reader.readAsText(file);
-  };
-
-  // 加载 m3u 地址
-  const onInputUrl = async () => {
-    if (!m3uUrl) return;
-    try {
-      const res = await fetch(m3uUrl);
-      const txt = await res.text();
-      const ch = parseM3U(txt);
-      setChannels(ch);
-      setCurrent(ch[0] || null);
-    } catch {
-      alert("无法加载m3u地址");
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target.result
+        const parsedChannels = parseM3U(content)
+        setChannels(parsedChannels)
+      }
+      reader.readAsText(file)
     }
-  };
+  }
+
+  const handleUrlSubmit = async (url) => {
+    try {
+      const response = await fetch(url)
+      const content = await response.text()
+      const parsedChannels = parseM3U(content)
+      setChannels(parsedChannels)
+    } catch (error) {
+      console.error('Error loading M3U file:', error)
+      alert('Error loading M3U file. Please check the URL and try again.')
+    }
+  }
 
   return (
     <div className="container">
-      <Header
-        onInputFile={onInputFile}
-        onInputUrl={onInputUrl}
-        m3uUrl={m3uUrl}
-        setM3uUrl={setM3uUrl}
-      />
-      <ChannelList channels={channels} current={current} onSelect={setCurrent} />
-      <Player url={current?.url} />
+      <Header onFileUpload={handleFileUpload} onUrlSubmit={handleUrlSubmit} />
+      <div className="content">
+        <ChannelList 
+          channels={channels} 
+          currentChannel={currentChannel}
+          onChannelSelect={setCurrentChannel} 
+        />
+        {currentChannel && <Player url={currentChannel.url} />}
+      </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
